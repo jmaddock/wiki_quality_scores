@@ -59,5 +59,6 @@ This extractor looks for instances of templates that contain
 template name to obtain a `project`.
 """,
     namespaces={1},
-    from_template=from_template
+    from_template=from_template,
+    possible_labels=POSSIBLE_LABELS
 )
