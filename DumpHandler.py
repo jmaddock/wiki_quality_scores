@@ -1,8 +1,8 @@
 import subprocess
 import utils
+import os
 
 ## Class for decompressing, iterating through, and re-compressing wiki xml dumps
-## Will not decompress/recompress in debug mode
 class DumpHandler(object):
     def __init__(self,f_in):
         self.f_in = f_in
@@ -10,17 +10,12 @@ class DumpHandler(object):
         self.dump = None
         self.base_dir = f_in.rsplit('/', 1)[0]
 
-    # create an iterator for a dump that has already been decompressed
-    # depreciated
-    def open_dump(self):
-        utils.log('opening file: %s' % self.f_in)
-        self.dump = mwxml.Dump.from_file(self.db_path)
-        return self.dump
-
     # decompress a dump from a .7z archive
+    # return decompressed file path
     def decompress(self):
         utils.log('decompressing file: %s' % self.f_in)
         subprocess.call(['7z','x',self.f_in,'-o' + self.base_dir])
+        return self.uncompressed
 
     # remove the decompressed dump after processing
     def remove_dump(self):
