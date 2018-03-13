@@ -15,7 +15,8 @@ COLUMN_LIST = [
     "revert",
     "ts",
     "quality_change",
-    "new_quality_scores"
+    "new_quality_scores",
+    "deleted"
 ]
 
 class WikiDumpProcessor(object):
@@ -81,6 +82,8 @@ class WikiDumpProcessor(object):
                 self.write_processed_page(processed_page,outfile)
                 self.page_count += 1
                 self.edit_count += wpp.edit_count
+            if self.page_count % 1000 == 0:
+                utils.log('processed %s pages and %s edits' % (self.page_count, self.edit_count))
             if self.num_rows == self.page_count:
                 break
         utils.log('processed %s pages and %s edits' % (self.page_count, self.edit_count))

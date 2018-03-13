@@ -7,6 +7,7 @@ from single_revision_template_extractor import Single_Revision_Template_Extracto
 
 logger = logging.getLogger(__name__)
 
+# TODO: fix this to actually return the name of the project
 PROJECT_NAME = "wikiprojet"
 
 POSSIBLE_LABELS = ("e", "bd", "b", "a", "ba", "adq")
