@@ -108,5 +108,5 @@ class WikiPageProcessor(object):
             if self.quality_extractor:
                 self.revision_dict[rev.id]['quality_change'], self.revision_dict[rev.id]['new_quality_scores'] = self.quality_extractor.extract(rev)
             if self.edit_count % 100 == 0:
-                utils.log('processed %s edits' % (self.edit_count))
+                utils.log('processed {0} edits from page {1}'.format(self.edit_count,self.page.title))
         return {'page':p,'revisions':self.revision_dict}
