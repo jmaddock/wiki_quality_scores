@@ -22,7 +22,8 @@ class Single_Revision_Template_Extractor(TemplateExtractor):
                 project_labels = set(pl for pl in self.extract_labels(revision_text))
             # catch parse errors from the template parser
             # assume new quality scores and quality change are both 0
-            except mwparserfromhell.parser.ParserError:
+            except mwparserfromhell.parser.ParserError as e:
+                utils.log(e)
                 utils.log('parser error for page: {0}, id: {1}'.format(revision.page.title,revision.id))
                 return 0,0
 
@@ -30,8 +31,6 @@ class Single_Revision_Template_Extractor(TemplateExtractor):
             for project, wp10 in project_labels:
                 current_quality_scores[project] = wp10
             quality_change, new_quality_scores = self.calculate_quality_change(current_quality_scores)
-            if quality_change != 0 or new_quality_scores != 0:
-                print(revision.page.title)
 
         else:
             quality_change = 0
@@ -54,8 +53,6 @@ class Single_Revision_Template_Extractor(TemplateExtractor):
                 quality_change += np.sign(self.possible_labels.index(current_quality_scores[project]) - self.possible_labels.index(self.quality_scores[project]))
             # log the project and the quality score in the extractors dictionary of quality scores
             self.quality_scores[project] = current_quality_scores[project]
-            print(quality_change, new_quality_scores)
-            print(current_quality_scores)
         return quality_change, new_quality_scores
 
     def reset(self):
