@@ -5,6 +5,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import utils
 import numpy as np
+import mwparserfromhell
 
 class Single_Revision_Template_Extractor(TemplateExtractor):
     def __init__(self,*args, from_template, possible_labels, **kwargs):
@@ -17,12 +18,15 @@ class Single_Revision_Template_Extractor(TemplateExtractor):
             # initialize dict to hold project:quality labels for current revision
             # Process all of the revisions looking for new class labels
             revision_text = revision.text or ""
-            project_labels = set(pl for pl in
-                                 self.extract_labels(revision_text))
+            try:
+                project_labels = set(pl for pl in self.extract_labels(revision_text))
+            # catch parse errors from the template parser
+            # assume new quality scores and quality change are both 0
+            except mwparserfromhell.parser.ParserError:
+                utils.log('parser error for page: {0}, id: {1}'.format(revision.page.title,revision.id))
+                return 0,0
 
-            #if len(project_labels) > 0:
             current_quality_scores = {}
-            #current_quality_scores = [{project:wp10} for project, wp10 in project_labels]
             for project, wp10 in project_labels:
                 current_quality_scores[project] = wp10
             quality_change, new_quality_scores = self.calculate_quality_change(current_quality_scores)
