@@ -1,3 +1,4 @@
+import utils
 import mwreverts
 import translations
 import datetime
@@ -106,4 +107,6 @@ class WikiPageProcessor(object):
             self.process_revert(rev)
             if self.quality_extractor:
                 self.revision_dict[rev.id]['quality_change'], self.revision_dict[rev.id]['new_quality_scores'] = self.quality_extractor.extract(rev)
+            if self.edit_count % 100 == 0:
+                utils.log('processed %s edits' % (self.edit_count))
         return {'page':p,'revisions':self.revision_dict}
