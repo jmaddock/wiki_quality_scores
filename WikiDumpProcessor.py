@@ -1,9 +1,9 @@
 from WikiPageProcessor import WikiPageProcessor
 from DumpHandler import DumpHandler
 import mwxml
-import utils
 import argparse
 import single_revision_template_extractor
+import logging
 
 COLUMN_LIST = [
     "page_id",
@@ -32,6 +32,11 @@ class WikiDumpProcessor(object):
             self.num_rows = kwargs['num_rows']
         else:
             self.num_rows = None
+        # some logging stuff
+        if 'logger' in kwargs:
+            self.logger = kwargs['logger']
+        else:
+            self.logger = None
         # keep track of the number of processed pages and edits debug/logging purposes
         self.page_count = 0
         self.edit_count = 0
@@ -60,8 +65,9 @@ class WikiDumpProcessor(object):
                     raise KeyError(message)
             outfile.write("\n")
 
-    def process_dump(self, n=None, v=False, debug=False):
+    def process_dump(self):
         # create an iterator for the xml file
+        self.logger.info('processing file {0}'.format(self.dump_path))
         dump = mwxml.Dump.from_file(self.dump_path)
         # create an empty .csv file for the output (processed edits)
         outfile = open(self.outfile_path, 'w')
@@ -71,22 +77,23 @@ class WikiDumpProcessor(object):
         # break after n iterations if the --debug flag has been specified
         extractor_name = self.get_extractor_name()
         quality_extractor = single_revision_template_extractor.load_extractor(extractor_name)
+        quality_extractor.set_logger(self.logger)
         for page in dump:
             if page.namespace == 1 or page.namespace == 0:
                 wpp = WikiPageProcessor(page=page,
                                         lang=self.lang,
-                                        quality_extractor=quality_extractor)
+                                        quality_extractor=quality_extractor,
+                                        logger=self.logger)
                 quality_extractor.reset()
                 # process page level data
                 processed_page = wpp.process()
                 self.write_processed_page(processed_page,outfile)
                 self.page_count += 1
                 self.edit_count += wpp.edit_count
-            if self.page_count % 1000 == 0:
-                utils.log('processed %s pages and %s edits' % (self.page_count, self.edit_count))
             if self.num_rows == self.page_count:
                 break
-        utils.log('processed %s pages and %s edits' % (self.page_count, self.edit_count))
+        if self.logger:
+            self.logger.info('processed {0} pages and {1} edits'.format(self.page_count, self.edit_count))
 
 def job_script(args):
     return
@@ -111,6 +118,8 @@ def main():
     parser.add_argument('-v', '--verbose',
                         action='store_true',
                         help='print verbose output')
+    parser.add_argument('--log_file',
+                        help='a file to log output')
     args = parser.parse_args()
     if args.job_script:
         job_script(args.job_script,args.lang)
@@ -124,11 +133,27 @@ def main():
         else:
             dh = DumpHandler(infile)
             xml_dump = dh.decompress()
+        # create handler to log output to file
+        if args.log_file:
+            logger = logging.getLogger(__name__)
+            if args.verbose:
+                logger.setLevel(logging.DEBUG)
+            else:
+                logger.setLevel(logging.INFO)
+            handler = logging.FileHandler(filename=args.log_file,
+                                          mode='w')
+            formatter = logging.Formatter(fmt='[%(levelname)s %(asctime)s] %(message)s',
+                                          datefmt='%m/%d/%Y %I:%M:%S %p')
+            handler.setFormatter(formatter)
+            logger.addHandler(handler)
+        else:
+            logger = None
         # create an object to handle the decompressed xml dump
         wdp = WikiDumpProcessor(lang=args.lang[0],
                                 dump_path=xml_dump,
                                 outfile_path=outfile,
-                                num_rows=args.num_rows)
+                                num_rows=args.num_rows,
+                                logger=logger)
         wdp.process_dump()
         # remove the decompressed file if the user has not specified the --no_decompress flag
         if not args.no_decompress:

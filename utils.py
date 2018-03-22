@@ -22,8 +22,3 @@ def read_wiki_edits_file(infile,lang=None):
             tp = pd.read_csv(infile,na_values={'title':''},keep_default_na=False,dtype={'title': object},iterator=True,chunksize=1000)
             df = pd.concat(tp, ignore_index=True)
     return df
-
-def log(text,log_file=None):
-    print('[%s] %s' % (str(datetime.datetime.now().time())[:-7],text))
-    if log_file:
-        write_log(text)

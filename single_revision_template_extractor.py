@@ -3,7 +3,6 @@ from importlib import import_module
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import utils
 import numpy as np
 import mwparserfromhell
 
@@ -11,7 +10,12 @@ class Single_Revision_Template_Extractor(TemplateExtractor):
     def __init__(self,*args, from_template, possible_labels, **kwargs):
         self.quality_scores = {}
         self.possible_labels = possible_labels
+        # logging stuff
+        self.logger = None
         super().__init__(*args, from_template=from_template, **kwargs)
+
+    def set_logger(self,logger):
+        self.logger = logger
 
     def extract(self, revision):
         if revision.page.namespace in self.namespaces:
@@ -23,8 +27,9 @@ class Single_Revision_Template_Extractor(TemplateExtractor):
             # catch parse errors from the template parser
             # assume new quality scores and quality change are both 0
             except mwparserfromhell.parser.ParserError as e:
-                utils.log(e)
-                utils.log('parser error for page: {0}, id: {1}'.format(revision.page.title,revision.id))
+                if self.logger:
+                    self.logger.warning(e)
+                    self.logger.warning('parser error for page: {0}, id: {1}'.format(revision.page.title,revision.id))
                 return 0,0
 
             current_quality_scores = {}
@@ -58,7 +63,7 @@ class Single_Revision_Template_Extractor(TemplateExtractor):
     def reset(self):
         self.quality_scores = {}
 
-def load_extractor(extractor_name):
+def load_extractor(extractor_name,**kwargs):
     try:
         return import_module("custom_extractors." + extractor_name)
     except ImportError:

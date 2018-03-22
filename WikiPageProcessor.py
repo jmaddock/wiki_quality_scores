@@ -1,8 +1,6 @@
-import utils
 import mwreverts
 import translations
 import datetime
-import config
 import single_revision_template_extractor
 
 QUOTE_ESCAPE_CHAR = '&quot'
@@ -27,6 +25,12 @@ class WikiPageProcessor(object):
         else:
             self.quality_extractor = None
         self.edit_count = 0
+        # some logging stuff
+        if 'logger' in kwargs:
+            self.logger = kwargs['logger']
+        else:
+            self.logger = None
+
 
     def get_extractor_name(self):
         if self.lang == 'simple':
@@ -107,6 +111,6 @@ class WikiPageProcessor(object):
             self.process_revert(rev)
             if self.quality_extractor:
                 self.revision_dict[rev.id]['quality_change'], self.revision_dict[rev.id]['new_quality_scores'] = self.quality_extractor.extract(rev)
-            if self.edit_count % 100 == 0:
-                utils.log('processed {0} edits from page {1}'.format(self.edit_count,self.page.title))
+        if self.logger:
+            self.logger.debug('processed {0} edits from page {1}'.format(self.edit_count,self.page.title))
         return {'page':p,'revisions':self.revision_dict}
