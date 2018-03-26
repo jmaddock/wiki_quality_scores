@@ -116,43 +116,40 @@ def main():
     parser.add_argument('--log_file',
                         help='a file to log output')
     args = parser.parse_args()
-    if args.job_script:
-        job_script(args.job_script,args.lang)
+    infile = args.infile
+    outfile = args.outfile
+    # create an object to handle the compressed dump if it hasn't already been decompressed
+    # return a decompressed xml file
+    if args.no_decompress:
+        xml_dump = infile
     else:
-        infile = args.infile
-        outfile = args.outfile
-        # create an object to handle the compressed dump if it hasn't already been decompressed
-        # return a decompressed xml file
-        if args.no_decompress:
-            xml_dump = infile
+        dh = DumpHandler(infile)
+        xml_dump = dh.decompress()
+    # create handler to log output to file
+    if args.log_file:
+        logger = logging.getLogger(__name__)
+        if args.verbose:
+            logger.setLevel(logging.DEBUG)
         else:
-            dh = DumpHandler(infile)
-            xml_dump = dh.decompress()
-        # create handler to log output to file
-        if args.log_file:
-            logger = logging.getLogger(__name__)
-            if args.verbose:
-                logger.setLevel(logging.DEBUG)
-            else:
-                logger.setLevel(logging.INFO)
-            handler = logging.FileHandler(filename=args.log_file,
-                                          mode='w')
-            formatter = logging.Formatter(fmt='[%(levelname)s %(asctime)s] %(message)s',
-                                          datefmt='%m/%d/%Y %I:%M:%S %p')
-            handler.setFormatter(formatter)
-            logger.addHandler(handler)
-        else:
-            logger = None
-        # create an object to handle the decompressed xml dump
-        wdp = WikiDumpProcessor(lang=args.lang[0],
-                                dump_path=xml_dump,
-                                outfile_path=outfile,
-                                num_rows=args.num_rows,
-                                logger=logger)
-        wdp.process_dump()
-        # remove the decompressed file if the user has not specified the --no_decompress flag
-        if not args.no_decompress:
-            dh.remove_dump()
+            logger.setLevel(logging.INFO)
+        handler = logging.FileHandler(filename=args.log_file,
+                                      mode='w')
+        formatter = logging.Formatter(fmt='[%(levelname)s %(asctime)s] %(message)s',
+                                      datefmt='%m/%d/%Y %I:%M:%S %p')
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+    else:
+        logger = None
+    # create an object to handle the decompressed xml dump
+    wdp = WikiDumpProcessor(lang=args.lang[0],
+                            dump_path=xml_dump,
+                            outfile_path=outfile,
+                            num_rows=args.num_rows,
+                            logger=logger)
+    wdp.process_dump()
+    # remove the decompressed file if the user has not specified the --no_decompress flag
+    if not args.no_decompress:
+        dh.remove_dump()
 
 if __name__ == "__main__":
     main()
