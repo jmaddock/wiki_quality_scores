@@ -55,15 +55,17 @@ class WikiDumpProcessor(object):
 
     def write_processed_page(self,processed_page,outfile):
         for rev in processed_page['revisions']:
+            out = ''
             for column in self.column_list:
                 if column in processed_page['page']:
-                    outfile.write('"{0}",'.format(processed_page['page'][column]))
+                    out += '"{0}",'.format(processed_page['page'][column])
                 elif column in processed_page['revisions'][rev]:
-                    outfile.write('"{0}",'.format(processed_page['revisions'][rev][column]))
+                    out += '"{0}",'.format(processed_page['revisions'][rev][column])
                 else:
                     message = 'Column name {0} not found in page {1}'.format(column,processed_page['page']['page_id'])
                     raise KeyError(message)
-            outfile.write("\n")
+            out = out.rstrip(',') + '\n'
+            outfile.write(out)
 
     def process_dump(self):
         # create an iterator for the xml file

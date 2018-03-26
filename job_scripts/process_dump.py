@@ -75,10 +75,10 @@ def main():
         # get a list of .7z files in the language directory
         file_list = [os.path.join(base_lang_dir, x) for x in os.listdir(base_lang_dir) if '.7z' in x]
         for i, f in enumerate(file_list):
-            outfile_path = '{0}{1}_{2}.csv'.format(args.outdir, l, i)
+            outfile_path = '{0}_{1}_{2}.csv'.format(args.outdir, l, i)
             out += 'python3 {0} -l {1} -i {2} -o {3}'.format(SCRIPT_PATH, l, f, outfile_path)
             if args.log_dir:
-                logfile_path = '{0}{1}_{2}.log'.format(args.log_dir, l, i)
+                logfile_path = '{0}_{1}_{2}.log'.format(args.log_dir, l, i)
                 out = '{0} --log_file {1}'.format(out, logfile_path)
             out += '\n'
     job_script.write(out)
