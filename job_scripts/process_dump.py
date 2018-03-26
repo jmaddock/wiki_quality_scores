@@ -3,7 +3,7 @@ import os
 import sys
 import logging
 
-SCRIPT_PATH = os.path.join(os.path.abspath(__file__),os.pardir,'WikiDumpProcessor.py')
+SCRIPT_PATH = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)),os.pardir,'WikiDumpProcessor.py'))
 
 # set up some logging stuff
 logger = logging.getLogger(__name__)
@@ -16,7 +16,7 @@ logger.addHandler(handler)
 ## infer a list of language codes to process based on the directory structure
 def infer_lang_list(basedir):
         lang_list = [name for name in os.listdir(basedir) if
-                     os.path.isdir(os.path.join(name, name))]
+                     os.path.isdir(os.path.join(basedir, name))]
         logger.info('found language directories {0}'.format(lang_list))
         return lang_list
 
@@ -27,16 +27,16 @@ def validate_dirs(args):
     if not os.path.isdir(os.path.dirname(args.outdir)):
         raise FileNotFoundError('{0} is not a valid output directory'.format(args.outdir))
     if args.log_dir and not os.path.isdir(os.path.dirname(args.log_dir)):
-        raise FileNotFoundError('{0} is not a valid logging directory'.format(args.outdir))
+        raise FileNotFoundError('{0} is not a valid logging directory'.format(args.log_dir))
     if not os.path.exists(SCRIPT_PATH):
-        raise FileNotFoundError('{0} is not a valid processing script file'.format(args.outdir))
+        raise FileNotFoundError('{0} is not a valid processing script file'.format(SCRIPT_PATH))
     logger.info('all specified base directories and files are valid')
 
 def main():
     parser = argparse.ArgumentParser(description='process wiki dumps')
     parser.add_argument('-l','--lang',
                         nargs='*',
-                        require=True,
+                        required=True,
                         help='a list of two letter language codes to process, or "infer" to infer the language list from the directory structure')
     parser.add_argument('-i', '--indir',
                         required=True,
@@ -50,6 +50,7 @@ def main():
     parser.add_argument('--log_dir',
                         help='directory to store log files')
     parser.add_argument('--verbose',
+                        action='store_true',
                         help='verbose output')
     args = parser.parse_args()
     # make sure all the directories actually exist
@@ -62,7 +63,7 @@ def main():
     # create the job script file, passed in command line params with -j flag
     job_script = open(args.jobscript_outfile, 'w')
     # if the user does not provide a list of language codes, infer it from the directory structure
-    if args.lang == 'infer':
+    if args.lang[0] == 'infer':
         lang_list = infer_lang_list(args.indir)
     else:
         lang_list = args.lang
@@ -76,9 +77,9 @@ def main():
         for i, f in enumerate(file_list):
             outfile_path = '{0}{1}_{2}.csv'.format(args.outdir, l, i)
             out += 'python3 {0} -l {1} -i {2} -o {3}'.format(SCRIPT_PATH, l, f, outfile_path)
-            if args.log_file:
+            if args.log_dir:
                 logfile_path = '{0}{1}_{2}.log'.format(args.log_dir, l, i)
-                out = '{0} --log_file {1}'.format(logfile_path)
+                out = '{0} --log_file {1}'.format(out, logfile_path)
             out += '\n'
     job_script.write(out)
     logger.debug(out)
