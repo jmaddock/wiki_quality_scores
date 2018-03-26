@@ -49,9 +49,11 @@ class WikiDumpProcessor(object):
         return extractor_name
 
     def write_header(self,outfile):
+        out = ''
         for column in self.column_list:
-            outfile.write('"{0}",'.format(column))
-        outfile.write('\n')
+            out += '"{0}",'.format(column)
+        out = out.rstrip(',') + '\n'
+        outfile.write(out)
 
     def write_processed_page(self,processed_page,outfile):
         for rev in processed_page['revisions']:
