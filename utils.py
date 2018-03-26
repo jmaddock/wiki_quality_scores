@@ -18,7 +18,7 @@ def read_wiki_edits_file(infile,lang=None):
         try:
             df = pd.read_csv(infile,na_values={'title':''},keep_default_na=False,dtype={'title': object})
         except MemoryError:
-            log('file too large, importing with iterator...')
+            print('file too large, importing with iterator...')
             tp = pd.read_csv(infile,na_values={'title':''},keep_default_na=False,dtype={'title': object},iterator=True,chunksize=1000)
             df = pd.concat(tp, ignore_index=True)
     return df

@@ -95,9 +95,6 @@ class WikiDumpProcessor(object):
         if self.logger:
             self.logger.info('processed {0} pages and {1} edits'.format(self.page_count, self.edit_count))
 
-def job_script(args):
-    return
-
 def main():
     parser = argparse.ArgumentParser(description='process wiki dumps')
     parser.add_argument('-l','--lang',
@@ -107,8 +104,6 @@ def main():
                         help='the file path of a wikipedia xml dump to process')
     parser.add_argument('-o','--outfile',
                         help='a file path for an output .csv of edits')
-    parser.add_argument('-j','--job_script',
-                        help='the path to output a job script file for HYAK batch processing')
     parser.add_argument('--num_rows',
                         type=int,
                         help='DEBUG: limit the number of rows in the dump file to process')
