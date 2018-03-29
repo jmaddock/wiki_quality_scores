@@ -110,7 +110,15 @@ class WikiPageProcessor(object):
             # update reverteds if the edit is a revert
             self.process_revert(rev)
             if self.quality_extractor:
-                self.revision_dict[rev.id]['quality_change'], self.revision_dict[rev.id]['new_quality_scores'] = self.quality_extractor.extract(rev)
+                self.quality_extractor.extract(rev)
+        for q in self.quality_extractor.calculate_quality_scores():
+            self.revision_dict[q.id]['new_quality_scores'] = q.new
+            self.revision_dict[q.id]['quality_change'] = q.change
+            self.revision_dict[q.id]['min_quality'] = q.min
+            self.revision_dict[q.id]['mean_quality'] = q.mean
+            self.revision_dict[q.id]['max_quality'] = q.max
+            self.revision_dict[q.id]['quality_parse_error'] = q.error
+
         if self.logger:
             self.logger.debug('processed {0} edits from page {1}'.format(self.edit_count,self.page.title))
         return {'page':p,'revisions':self.revision_dict}

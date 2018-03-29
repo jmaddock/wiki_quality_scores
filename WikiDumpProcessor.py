@@ -16,6 +16,10 @@ COLUMN_LIST = [
     "ts",
     "quality_change",
     "new_quality_scores",
+    "min_quality",
+    "mean_quality",
+    "max_quality",
+    "quality_parse_error",
     "deleted"
 ]
 
