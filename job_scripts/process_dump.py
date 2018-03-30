@@ -53,6 +53,11 @@ def main():
                         action='store_true',
                         help='verbose output')
     args = parser.parse_args()
+    # get absolute paths of all directory arguments
+    args.indir = os.path.abspath(args.indir)
+    args.outdir = os.path.abspath(args.outdir)
+    if args.log_dir:
+        args.log_dir = os.path.abspath(args.log_dir)
     # make sure all the directories actually exist
     validate_dirs(args)
     # set log level
