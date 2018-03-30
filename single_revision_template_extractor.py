@@ -37,7 +37,7 @@ class Single_Revision_Template_Extractor(TemplateExtractor):
         quality_list = None
         error = False
         # ignore all deleted revisions or revisions that are not talk pages
-        if revision.page.namespace in self.namespaces and not revision.deleted:
+        if revision.page.namespace in self.namespaces and not revision.deleted.text:
             # initialize dict to hold project:quality labels for current revision
             # Process all of the revisions looking for new class labels
             revision_text = revision.text or ""
@@ -46,8 +46,7 @@ class Single_Revision_Template_Extractor(TemplateExtractor):
                 # create a list of tuples of the form (project_name,quality_score)
                 quality_list = [(project, wp10) for project, wp10 in project_labels]
             # catch parse errors from the template parser
-            # assume new quality scores and quality change are both 0
-            except mwparserfromhell.parser.ParserError as e:
+            except (mwparserfromhell.parser.ParserError, ValueError, mwparserfromhell.parser.tokenizer.BadRoute, RecursionError) as e:
                 if self.logger:
                     self.logger.warning(e)
                     self.logger.warning('parser error for page: {0}, id: {1}'.format(revision.page.title,revision.id))
@@ -83,14 +82,15 @@ class Single_Revision_Template_Extractor(TemplateExtractor):
                 new = 0
                 # iterate through all of the project ratings within a revision
                 for project, current_quality_score in rev.quality_list:
-                    quality_list += current_quality_score
+                    quality_list.append(self.possible_labels.index(current_quality_score))
                     if project in quality_score_dict:
-                        change += np.sign(self.possible_labels.index(current_quality_score) - self.possible_labels.index(self.quality_score_dict[project]))
+                        change += np.sign(self.possible_labels.index(current_quality_score) - self.possible_labels.index(quality_score_dict[project]))
                     else:
                         new += 1
-                qmin = min(quality_list),
-                qmean = np.mean(quality_list),
-                qmax = max(quality_list),
+                    quality_score_dict[project] = current_quality_score
+                qmin = min(quality_list)
+                qmean = np.mean(quality_list)
+                qmax = max(quality_list)
 
             yield ProcessedRevisionQuality(
                 new=new,

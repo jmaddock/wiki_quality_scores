@@ -4,6 +4,7 @@ import mwxml
 import argparse
 import single_revision_template_extractor
 import logging
+from xml.etree.ElementTree import ParseError
 
 COLUMN_LIST = [
     "page_id",
@@ -19,8 +20,8 @@ COLUMN_LIST = [
     "min_quality",
     "mean_quality",
     "max_quality",
-    "quality_parse_error",
-    "deleted"
+    "parse_error",
+    "deleted_text"
 ]
 
 class WikiDumpProcessor(object):
@@ -44,6 +45,8 @@ class WikiDumpProcessor(object):
         # keep track of the number of processed pages and edits debug/logging purposes
         self.page_count = 0
         self.edit_count = 0
+        self.page_error_count = 0
+        self.quality_error_count = 0
 
     def get_extractor_name(self):
         if self.lang == 'simple':
@@ -88,20 +91,30 @@ class WikiDumpProcessor(object):
         quality_extractor.set_logger(self.logger)
         for page in dump:
             if page.namespace == 1 or page.namespace == 0:
-                wpp = WikiPageProcessor(page=page,
-                                        lang=self.lang,
-                                        quality_extractor=quality_extractor,
-                                        logger=self.logger)
-                quality_extractor.reset()
-                # process page level data
-                processed_page = wpp.process()
-                self.write_processed_page(processed_page,outfile)
-                self.page_count += 1
-                self.edit_count += wpp.edit_count
+                try:
+                    wpp = WikiPageProcessor(page=page,
+                                            lang=self.lang,
+                                            quality_extractor=quality_extractor,
+                                            logger=self.logger)
+                    quality_extractor.reset()
+                    # process page level data
+                    processed_page = wpp.process()
+                    self.write_processed_page(processed_page,outfile)
+                    self.page_count += 1
+                    self.edit_count += wpp.edit_count
+                    self.quality_error_count += wpp.error_count
+                except ParseError as e:
+                    if self.logger:
+                        self.logger.warning(e)
+                        self.logger.warning('parser error for page: {0}, id: {1}'.format(page.title, page.id))
+                    self.page_error_count += 1
+
             if self.num_rows == self.page_count:
                 break
         if self.logger:
             self.logger.info('processed {0} pages and {1} edits'.format(self.page_count, self.edit_count))
+            if self.page_error_count > 0 or self.quality_error_count > 0:
+                self.logger.warning('handled {0} page parse errors and {1} quality parse errors'.format(self.page_error_count,self.quality_error_count))
 
 def main():
     parser = argparse.ArgumentParser(description='process wiki dumps')

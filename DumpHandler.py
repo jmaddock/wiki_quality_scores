@@ -19,7 +19,7 @@ class DumpHandler(object):
     def decompress(self):
         if self.logger:
             self.logger.info('decompressing file: %s' % self.f_in)
-        subprocess.call(['7z','x',self.f_in,'-o' + self.base_dir])
+        subprocess.call(['7z','x',self.f_in,'-o' + self.base_dir,'-bso0','-bsp0'])
         return self.uncompressed
 
     # remove the decompressed dump after processing

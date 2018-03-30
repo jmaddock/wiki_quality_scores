@@ -30,6 +30,7 @@ class WikiPageProcessor(object):
             self.logger = kwargs['logger']
         else:
             self.logger = None
+        self.error_count = 0
 
 
     def get_extractor_name(self):
@@ -73,10 +74,10 @@ class WikiPageProcessor(object):
     def process_edit(self,rev):
         r = {}
         # indicate if the revision was deleted or restricted by the user
-        if rev.deleted:
-            r['deleted'] = True
+        if rev.deleted.text:
+            r['deleted_text'] = True
         else:
-            r['deleted'] = False
+            r['deleted_text'] = False
         # replace quote chars in user text
         if rev.user and rev.user.text:
             r['user_text'] = rev.user.text.replace('"', '')
@@ -111,13 +112,17 @@ class WikiPageProcessor(object):
             self.process_revert(rev)
             if self.quality_extractor:
                 self.quality_extractor.extract(rev)
-        for q in self.quality_extractor.calculate_quality_scores():
-            self.revision_dict[q.id]['new_quality_scores'] = q.new
-            self.revision_dict[q.id]['quality_change'] = q.change
-            self.revision_dict[q.id]['min_quality'] = q.min
-            self.revision_dict[q.id]['mean_quality'] = q.mean
-            self.revision_dict[q.id]['max_quality'] = q.max
-            self.revision_dict[q.id]['quality_parse_error'] = q.error
+
+        if self.quality_extractor:
+            for q in self.quality_extractor.calculate_quality_change():
+                self.revision_dict[q.id]['new_quality_scores'] = q.new
+                self.revision_dict[q.id]['quality_change'] = q.change
+                self.revision_dict[q.id]['min_quality'] = q.min
+                self.revision_dict[q.id]['mean_quality'] = q.mean
+                self.revision_dict[q.id]['max_quality'] = q.max
+                self.revision_dict[q.id]['parse_error'] = q.error
+                if q.error:
+                    self.error_count += 1
 
         if self.logger:
             self.logger.debug('processed {0} edits from page {1}'.format(self.edit_count,self.page.title))
