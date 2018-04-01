@@ -144,7 +144,7 @@ def main():
     if args.no_decompress:
         xml_dump = infile
     else:
-        dh = DumpHandler(infile)
+        dh = DumpHandler(infile,overwrite=True)
         xml_dump = dh.decompress()
     # create handler to log output to file
     if args.log_file:
