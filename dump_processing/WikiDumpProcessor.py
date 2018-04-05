@@ -5,6 +5,7 @@ import argparse
 import single_revision_template_extractor
 import logging
 from xml.etree.ElementTree import ParseError
+import sys
 
 COLUMN_LIST = [
     "page_id",
@@ -136,12 +137,17 @@ def main():
                         help='print verbose output')
     parser.add_argument('--log_file',
                         help='a file to log output')
+    parser.add_argument('--stdin',
+                        action='store_true',
+                        help='process input from stdin rather than a file')
     args = parser.parse_args()
     infile = args.infile
     outfile = args.outfile
     # create an object to handle the compressed dump if it hasn't already been decompressed
     # return a decompressed xml file
-    if args.no_decompress:
+    if args.stdin:
+        xml_dump = sys.stdin
+    elif args.no_decompress:
         xml_dump = infile
     else:
         dh = DumpHandler(infile,overwrite=True)
@@ -169,7 +175,7 @@ def main():
                             logger=logger)
     wdp.process_dump()
     # remove the decompressed file if the user has not specified the --no_decompress flag
-    if not args.no_decompress:
+    if not args.no_decompress and not args.stdin:
         dh.remove_dump()
 
 if __name__ == "__main__":

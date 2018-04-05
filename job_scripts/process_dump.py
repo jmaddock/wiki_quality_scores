@@ -3,7 +3,7 @@ import os
 import sys
 import logging
 
-SCRIPT_PATH = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)),os.pardir,'WikiDumpProcessor.py'))
+SCRIPT_PATH = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)),os.pardir,'dump_processing','WikiDumpProcessor.py'))
 
 # set up some logging stuff
 logger = logging.getLogger(__name__)
@@ -49,9 +49,15 @@ def main():
                         help='a file path for the job script')
     parser.add_argument('--log_dir',
                         help='directory to store log files')
+    parser.add_argument('--create_language_dirs',
+                        action='store_true',
+                        help='create output language directories if they do not already exist')
     parser.add_argument('--verbose',
                         action='store_true',
                         help='verbose output')
+    parser.add_argument('--stdin',
+                        action='store_true',
+                        help='process input from stdin rather than a file')
     args = parser.parse_args()
     # make sure all the directories actually exist
     validate_dirs(args)
@@ -75,8 +81,11 @@ def main():
         # get a list of .7z files in the language directory
         file_list = [os.path.join(base_lang_dir, x) for x in os.listdir(base_lang_dir) if '.7z' in x]
         for i, f in enumerate(file_list):
-            outfile_path = '{0}_{1}_{2}.csv'.format(args.outdir, l, i)
-            out += 'python3 {0} -l {1} -i {2} -o {3}'.format(SCRIPT_PATH, l, f, outfile_path)
+            outfile_path = os.path.join(args.outdir,l,'{0}_{1}.csv'.format(l, i))
+            if args.stdin:
+                out += '7z x {0} -so -bso0 -bsp0 -aoa | python3 {1} -l {2} -o {3} --stdin'.format(f, SCRIPT_PATH, l, outfile_path)
+            else:
+                out += 'python3 {0} -l {1} -i {2} -o {3}'.format(SCRIPT_PATH, l, f, outfile_path)
             if args.log_dir:
                 logfile_path = '{0}_{1}_{2}.log'.format(args.log_dir, l, i)
                 out = '{0} --log_file {1}'.format(out, logfile_path)
