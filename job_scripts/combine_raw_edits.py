@@ -74,7 +74,7 @@ def main():
     if args.lang[0] == 'infer':
         js.infer_lang_list(args.indir)
     else:
-        js.set_lang_list(args.lang_list)
+        js.set_lang_list(args.lang)
     js.make_script()
 
 if __name__ == "__main__":

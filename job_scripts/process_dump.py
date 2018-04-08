@@ -83,7 +83,7 @@ def main():
     if args.lang[0] == 'infer':
         pdjs.infer_lang_list(args.indir)
     else:
-        pdjs.set_lang_list(args.lang_list)
+        pdjs.set_lang_list(args.lang)
     pdjs.make_script()
 
 if __name__ == "__main__":
