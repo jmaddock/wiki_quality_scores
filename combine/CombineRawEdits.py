@@ -14,7 +14,6 @@ class CombineRawEdits(object):
             self.logger = kwargs['logger']
         else:
             self.logger = None
-        self.outfile = outfile
         self.combined_df = None
 
     def get_file_list_from_dir(self,indir):
@@ -29,7 +28,7 @@ class CombineRawEdits(object):
             self.logger.info('combined {0} rows from {1} files'.format(len(self.combined_df,len(self.filelist))))
 
     def write_to_file(self,outfile):
-        self.combined_df.to_csv(self.outfile)
+        self.combined_df.to_csv(outfile)
         if self.logger:
             self.logger.info('wrote file to {0}'.format(self.outfile))
 
