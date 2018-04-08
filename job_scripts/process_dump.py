@@ -8,12 +8,12 @@ SCRIPT_PATH = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__fil
 
 class ProcessDumpJobScript(BaseJobScript):
 
-    def __init__(self,indir,outdir,jobscipt_file_path,script_path,**kwargs):
+    def __init__(self,indir,outdir,jobscript_file_path,script_path,**kwargs):
         if 'stdin' in kwargs and kwargs['stdin'] == True:
             self.stdin = True
         else:
             self.stdin = False
-        super().__init__(indir,outdir,jobscipt_file_path,script_path,**kwargs)
+        super().__init__(indir,outdir,jobscript_file_path,script_path,**kwargs)
 
     def make_script(self):
         # make sure all the directories actually exist

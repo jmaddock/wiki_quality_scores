@@ -8,11 +8,11 @@ SCRIPT_PATH = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__fil
 
 class CombineRawEditsJobScript(BaseJobScript):
 
-    def __init__(self,indir,outdir,jobscipt_file_path,script_path,**kwargs):
+    def __init__(self,indir,outdir,jobscript_file_path,script_path,**kwargs):
         super().__init__(
             indir=indir,
             outdir=outdir,
-            jobscript_file_path=jobscipt_file_path,
+            jobscript_file_path=jobscript_file_path,
             script_path=script_path,
             **kwargs
         )
