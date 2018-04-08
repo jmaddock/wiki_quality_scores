@@ -30,7 +30,7 @@ class CombineRawEditsJobScript(BaseJobScript):
             outfile_path = os.path.join(self.outdir, l, '{0}_combined_raw_edits.csv'.format(l))
             out += 'python3 {0} -i {1} -o {2}'.format(self.script_path, base_lang_dir, outfile_path)
             if self.log_dir:
-                logfile_path = '{0}_{1}_{2}.log'.format(self.log_dir, l, i)
+                logfile_path = '{0}_{1}.log'.format(self.log_dir, l)
                 out = '{0} --log_file {1}'.format(out, logfile_path)
             out += '\n'
         job_script.write(out)
