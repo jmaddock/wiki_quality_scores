@@ -12,7 +12,7 @@ class CombineRawEditsJobScript(BaseJobScript):
         super().__init__(
             indir=indir,
             outdir=outdir,
-            jobscipt_file_path=jobscipt_file_path,
+            jobscript_file_path=jobscipt_file_path,
             script_path=script_path,
             **kwargs
         )
