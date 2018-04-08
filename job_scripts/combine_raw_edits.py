@@ -66,9 +66,9 @@ def main():
         indir=args.indir,
         outdir=args.outdir,
         job_script_file_path=args.jobscript_outfile,
+        script_path=SCRIPT_PATH
         log_dir=args.log_dir,
         verbose=args.verbose,
-        script_path=SCRIPT_PATH
     )
     # if the user does not provide a list of language codes, infer it from the directory structure
     if args.lang[0] == 'infer':
