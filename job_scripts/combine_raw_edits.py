@@ -65,7 +65,7 @@ def main():
     js = CombineRawEditsJobScript(
         indir=args.indir,
         outdir=args.outdir,
-        job_script_file_path=args.jobscript_outfile,
+        jobscript_file_path=args.jobscript_outfile,
         script_path=SCRIPT_PATH,
         log_dir=args.log_dir,
         verbose=args.verbose,

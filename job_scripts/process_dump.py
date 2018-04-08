@@ -73,7 +73,7 @@ def main():
     pdjs = ProcessDumpJobScript(
         indir=args.indir,
         outdir=args.outdir,
-        job_script_file_path=args.jobscript_outfile,
+        jobscript_file_path=args.jobscript_outfile,
         log_dir=args.log_dir,
         verbose=args.verbose,
         stdin=args.stdin,
