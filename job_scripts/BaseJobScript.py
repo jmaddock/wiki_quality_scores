@@ -11,7 +11,7 @@ logger.addHandler(handler)
 
 class BaseJobScript(object):
 
-    def __init__(self,indir,outdir,jobscipt_file_path,script_path,**kwargs):
+    def __init__(self,indir,outdir,jobscript_file_path,script_path,**kwargs):
         self.logger = logger
         if 'lang_list' in kwargs:
             self.lang_list = kwargs['lang_list']
@@ -27,7 +27,7 @@ class BaseJobScript(object):
             self.logger.setLevel(logging.INFO)
         self.indir = indir
         self.outdir = outdir
-        self.jobscript_file_path = jobscipt_file_path
+        self.jobscript_file_path = jobscript_file_path
         self.script_path = script_path
 
         ## infer a list of language codes to process based on the directory structure
