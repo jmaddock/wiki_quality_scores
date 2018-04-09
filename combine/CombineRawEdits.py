@@ -17,7 +17,7 @@ class CombineRawEdits(object):
         self.combined_df = None
 
     def get_file_list_from_dir(self,indir):
-        self.filelist = [f for f in os.listdir(indir) if f[-4:] == '.csv']
+        self.filelist = [os.path.join(indir,f) for f in os.listdir(indir) if f[-4:] == '.csv']
         if self.logger:
             self.logger.debug(self.filelist)
             self.logger.info('found {0} files in {1}'.format(len(self.filelist),indir))
@@ -25,12 +25,12 @@ class CombineRawEdits(object):
     def combine(self):
         self.combined_df = pd.concat((pd.read_csv(f,na_values={'title':''},keep_default_na=False) for f in self.filelist))
         if self.logger:
-            self.logger.info('combined {0} rows from {1} files'.format(len(self.combined_df,len(self.filelist))))
+            self.logger.info('combined {0} rows from {1} files'.format(len(self.combined_df),len(self.filelist)))
 
     def write_to_file(self,outfile):
         self.combined_df.to_csv(outfile)
         if self.logger:
-            self.logger.info('wrote file to {0}'.format(self.outfile))
+            self.logger.info('wrote file to {0}'.format(outfile))
 
 
 def main():
@@ -43,7 +43,7 @@ def main():
     parser.add_argument('-f', '--filelist',
                         nargs='*',
                         help='a list of files to combine.  do not specify --indir')
-    parser.add_argument('-l', '--logfile',
+    parser.add_argument('-l', '--log_file',
                         help='a file to log output')
     parser.add_argument('-v', '--verbose',
                         action='store_true',
@@ -68,7 +68,7 @@ def main():
 
     cre = CombineRawEdits(filelist=args.filelist,
                           logger=logger)
-    if args.infile:
+    if args.indir:
         cre.get_file_list_from_dir(args.indir)
     cre.combine()
     cre.write_to_file(args.outfile)
