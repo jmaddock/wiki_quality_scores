@@ -1,1 +1,0 @@
-7z x /Users/klogg/research_data/wiki_language_data/dumps/simple/simplewiki-latest-pages-meta-history1.xml.7z -so -bso0 -bsp0 -aoa | python3 /Users/klogg/dev/wiki_languages/quality_scores/dump_processing/WikiDumpProcessor.py -l simple -o ./stdin_test/simple/simple_0.csv --stdin --log_file ./stdin_test_simple_0.log

@@ -28,7 +28,7 @@ class CombineRawEditsJobScript(BaseJobScript):
             # get the specific file path for a given language
             base_lang_dir = os.path.join(self.indir, l)
             outfile_path = os.path.join(self.outdir, l, '{0}_combined_raw_edits.csv'.format(l))
-            out += 'python3 {0} -i {1} -o {2}'.format(self.script_path, base_lang_dir, outfile_path)
+            out += 'python3 {0} -l {3} -i {1} -o {2}'.format(self.script_path, base_lang_dir, outfile_path, l)
             if self.log_dir:
                 logfile_path = '{0}_{1}.log'.format(self.log_dir, l)
                 out = '{0} --log_file {1}'.format(out, logfile_path)

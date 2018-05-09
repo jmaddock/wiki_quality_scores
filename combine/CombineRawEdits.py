@@ -25,16 +25,27 @@ class CombineRawEdits(object):
     def combine(self):
         self.combined_df = pd.concat((pd.read_csv(f,na_values={'title':''},keep_default_na=False) for f in self.filelist))
         if self.logger:
-            self.logger.info('combined {0} rows from {1} files'.format(len(self.combined_df),len(self.filelist)))
+            self.logger.info('combined {0} rows from {1} files'.format(len(self.combined_df), len(self.filelist)))
 
     def write_to_file(self,outfile):
         self.combined_df.to_csv(outfile)
         if self.logger:
             self.logger.info('wrote file to {0}'.format(outfile))
 
+    def combine_and_write(self,outfile):
+        rows = 0
+        for f in self.filelist:
+            rows += len(f)
+            f.to_csv(outfile, mode='a', columns=False)
+        if self.logger:
+            self.logger.info('combined {0} rows from {1} files'.format(rows, len(self.filelist)))
+            self.logger.info('wrote file to {0}'.format(outfile))
 
 def main():
     parser = argparse.ArgumentParser(description='process wiki dumps')
+    parser.add_argument('-l', '--lang',
+                        required=True,
+                        help='a two letter language code')
     parser.add_argument('-i','--indir',
                         help='combine all .csv files from this directory.  do not specify --filelist')
     parser.add_argument('-o', '--outfile',
@@ -65,13 +76,20 @@ def main():
         logger.addHandler(handler)
     else:
         logger = None
-
     cre = CombineRawEdits(filelist=args.filelist,
                           logger=logger)
     if args.indir:
         cre.get_file_list_from_dir(args.indir)
-    cre.combine()
-    cre.write_to_file(args.outfile)
+    if args.lang == 'en':
+        cre.combine_and_write(args.outfile)
+    else:
+        try:
+            cre.combine()
+            cre.write_to_file(args.outfile)
+        except MemoryError as e:
+            logger.warning(e)
+            logger.warning('file(s) too big, writing to disk')
+            cre.combine_and_write(args.outfile)
 
 if __name__ == "__main__":
     main()
