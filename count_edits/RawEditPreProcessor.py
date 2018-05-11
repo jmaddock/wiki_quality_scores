@@ -137,7 +137,7 @@ class RawEditPreProcessor(object):
         # get the number of pages
         return archived_talk_pages_without_non_archives
 
-    def preprocess(self,df):
+    def preprocess(self, df):
         # convert 'ts' field to pd.datetime
         df['ts'] = pd.to_datetime(df['ts'], format="%Y-%m-%d %H:%M:%S")
 

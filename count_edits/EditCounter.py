@@ -1,5 +1,6 @@
 import datetime
 import pandas as pd
+import numpy as np
 import logging
 from RawEditPreProcessor import RawEditPreProcessor
 from EditCountPostProcessor import EditCountPostProcessor
@@ -8,7 +9,12 @@ import argparse
 
 HALF_YEAR = lambda x: int((x-1)/6)
 
-COLUMNS = [
+INPUT_COLUMNS = [
+    'page_id', 'namespace', 'title', 'archive', 'user_text', 'revert', 'ts', 'quality_change', 'new_quality_scores',
+    'max_quality', 'parse_error', 'deleted_text'
+]
+
+PROCESSED_COLUMNS = [
     'title', 'year', 'half_year', 'edit_count_0', 'cumsum_edit_count_inclusive_0', 'cumsum_edit_count_exclusive_0',
     'page_id_0', 'page_age_0', 'editor_count_0', 'cumsum_editor_count_inclusive_0',
     'cumsum_editor_count_exclusive_0', 'gini_coef_0', 'edit_count_1', 'cumsum_edit_count_inclusive_1',
@@ -16,6 +22,37 @@ COLUMNS = [
     'cumsum_editor_count_exclusive_1', 'gini_coef_1', 'has_quality_assessment_1', 'max_quality_1',
     'quality_change_1', 'lang'
 ]
+
+NA_VALUES = {
+    'title': [''],
+    'archive': ['None'],
+    'user_text': [''],
+    'user_id': ['None'],
+    'revert': ['None'],
+    'quality_change': ['None'],
+    'new_quality_scores': ['None'],
+    'min_quality': ['None'],
+    'mean_quality': ['None'],
+    'max_quality': ['None'],
+}
+
+DTYPES = {
+    'page_id':np.int64,
+    'namespace':np.int64,
+    'title': object,
+    'archive': object,
+    'user_text': object,
+    'user_id': np.float64,
+    'revert': object,
+    'ts': object,
+    'quality_change': np.float64,
+    'new_quality_scores': np.float64,
+    'min_quality': np.float64,
+    'mean_quality': np.float64,
+    'max_quality': np.float64,
+    'parse_error': bool,
+    'deleted_text': bool
+}
 
 class EditCounter(object):
 
@@ -41,9 +78,9 @@ class EditCounter(object):
         # if processing EN Wikipedia, automatically load w/ iterator to avoid memory errors
         if self.lang == 'en':
             tp = pd.read_csv(infile,
-                             na_values={'title': '', 'user_text': ''},
+                             na_values=NA_VALUES,
                              keep_default_na=False,
-                             dtype={'title': object, 'user_text': object},
+                             dtype=DTYPES,
                              iterator=True,
                              chunksize=1000)
             df = pd.concat(tp, ignore_index=True)
@@ -51,21 +88,24 @@ class EditCounter(object):
         else:
             try:
                 df = pd.read_csv(infile,
-                                 na_values={'title': '', 'user_text': ''},
+                                 na_values=NA_VALUES,
                                  keep_default_na=False,
-                                 dtype={'title': object, 'user_text': object})
+                                 dtype=DTYPES,
             except MemoryError:
                 if self.logger:
                     self.logger.warning('file too large, importing with iterator...')
                 tp = pd.read_csv(infile,
-                                 na_values={'title': ''},
+                                 na_values=NA_VALUES,
                                  keep_default_na=False,
-                                 dtype={'title': object},
+                                 dtype=NA_VALUES,
                                  iterator=True,
                                  chunksize=1000)
                 df = pd.concat(tp, ignore_index=True)
 
-        self.df = df
+        df['archive'] = df['archive'].astype("category")
+        df['revert'] = df['revert'].astype("category")
+        df['namespace'] = df['namespace'].astype("category")
+        self.df = df[INPUT_COLUMNS]
 
     def write_to_file(self, outfile):
         self.processed_df.to_csv(outfile)
@@ -96,7 +136,7 @@ class EditCounter(object):
         result['lang'] = self.lang
         # post processing
         result = self.postprocessor.post_process(result)
-        self.processed_df = result[COLUMNS]
+        self.processed_df = result[PROCESSED_COLUMNS]
 
     def link_articles_and_talk(self, df):
         if self.logger:
