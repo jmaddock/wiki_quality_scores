@@ -90,7 +90,7 @@ class EditCounter(object):
                 df = pd.read_csv(infile,
                                  na_values=NA_VALUES,
                                  keep_default_na=False,
-                                 dtype=DTYPES,
+                                 dtype=DTYPES)
             except MemoryError:
                 if self.logger:
                     self.logger.warning('file too large, importing with iterator...')
