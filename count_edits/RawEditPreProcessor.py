@@ -78,7 +78,7 @@ class RawEditPreProcessor(object):
 
     # remove all edits that are reverts or have been reverted
     def drop_reverts(self, df):
-        df = df.loc[df['revert'] == 'None']
+        df = df.loc[df['revert'].isnull()]
         return df
 
     def drop_deleted(self, df):
@@ -119,7 +119,7 @@ class RawEditPreProcessor(object):
     ## if the page only contains archive, get a random archived ID
     def process_archive_names(self, df):
         # get all non-archived ids
-        result = df.loc[df['archive'] == 'None']
+        result = df.loc[df['archive'].isnull()]
         # get an archived id for each archive that doesn't have an un-archived page
         only_archive = self._get_archives_without_unarchived(df)
         # concat the 2 dfs
@@ -128,7 +128,7 @@ class RawEditPreProcessor(object):
 
     def _get_archives_without_unarchived(self, df):
         # get all unarchived talk page titles
-        unarchived_talk_page_titles = df.loc[(df['namespace'] == 1) & (df['archive'] == 'None')]['title']
+        unarchived_talk_page_titles = df.loc[(df['namespace'] == 1) & (df['archive'].isnull())]['title']
         # get all pages with titles not in unarchived_talk_page_titles
         archived_talk_pages_without_non_archives = df.loc[
             (~df['title'].isin(unarchived_talk_page_titles)) & (df['namespace'] == 1)]

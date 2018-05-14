@@ -82,7 +82,8 @@ class EditCounter(object):
                              keep_default_na=False,
                              dtype=DTYPES,
                              iterator=True,
-                             chunksize=1000)
+                             chunksize=1000,
+                             usecols=INPUT_COLUMNS)
             df = pd.concat(tp, ignore_index=True)
         # if not EN Wikipedia, try loading w/out iterator, but fall back to iterator
         else:
@@ -90,7 +91,8 @@ class EditCounter(object):
                 df = pd.read_csv(infile,
                                  na_values=NA_VALUES,
                                  keep_default_na=False,
-                                 dtype=DTYPES)
+                                 dtype=DTYPES,
+                                 usecols=INPUT_COLUMNS)
             except MemoryError:
                 if self.logger:
                     self.logger.warning('file too large, importing with iterator...')
@@ -99,7 +101,8 @@ class EditCounter(object):
                                  keep_default_na=False,
                                  dtype=NA_VALUES,
                                  iterator=True,
-                                 chunksize=1000)
+                                 chunksize=1000,
+                                 usecols=INPUT_COLUMNS)
                 df = pd.concat(tp, ignore_index=True)
 
         df['archive'] = df['archive'].astype("category")
@@ -116,18 +119,18 @@ class EditCounter(object):
         MERGE_ON = ['title', 'namespace', 'year', 'half_year']
 
         # preprocess the raw edit dataframe
-        df = self.preprocessor.preprocess(self.df)
+        self.df = self.preprocessor.preprocess(self.df)
 
         # calculate the edit counts for each page
-        result = self.count_edits(df)
+        result = self.count_edits(self.df)
         # calculate the age of a given page
-        age = self.page_age(df)
+        age = self.page_age(self.df)
         # calculate the number of editors that have contributed to a give page
-        editors = self.num_editors(df)
+        editors = self.num_editors(self.df)
         # calcuate the gini coefficient for each page
-        gini = self.calculate_editor_gini_coef(df)
+        gini = self.calculate_editor_gini_coef(self.df)
         # propagate quality scores
-        quality_scores = self.propagate_quality_scores(df)
+        quality_scores = self.propagate_quality_scores(self.df)
         # merge the editor and age columns w/ the result df
         result = result.merge(age, on=MERGE_ON, how='outer').merge(editors, on=MERGE_ON, how='outer').merge(gini, on=MERGE_ON, how='outer').merge(quality_scores, on=MERGE_ON, how='outer')
         # link articles and talk pages
