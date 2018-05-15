@@ -141,6 +141,9 @@ class RawEditPreProcessor(object):
         # convert 'ts' field to pd.datetime
         df['ts'] = pd.to_datetime(df['ts'], format="%Y-%m-%d %H:%M:%S")
 
+        # remove edits belonging to pages with no title
+        df = df.loc[df['title'].notnull()]
+
         # remove reverts
         if 'reverts' in self.drop:
             df = self.drop_reverts(df)
