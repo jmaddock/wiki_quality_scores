@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import os
 import datetime
+import gc
 
 class RawEditPreProcessor(object):
 
@@ -62,41 +63,63 @@ class RawEditPreProcessor(object):
         bot_list = pd.read_csv(self.bot_list_filepath, dtype={'bot_name': object}, na_values={'title': ''},
                                keep_default_na=False, )
         df['is_bot'] = df['user_text'].isin(bot_list['bot_name'])
+        gc.collect()
         return df
 
     def remove_bots(self, df):
+        if self.logger:
+            self.logger.info('dropping bot edits')
         num_bots = len(df.loc[df['is_bot'] == True])
         percent = num_bots / len(df)
         if self.logger:
             self.logger.info('dropped {0} ({1:.2f}%) bot edits'.format(num_bots, percent))
         df = df.loc[df['is_bot'] == False]
+        gc.collect()
         return df
 
     def remove_lists(self, df):
+        if self.logger:
+            self.logger.info('removing pages that are lists')
         df = df.loc[df['title'].str.contains('list', case=False)]
+        gc.collect()
         return df
 
     # remove all edits that are reverts or have been reverted
     def drop_reverts(self, df):
+        if self.logger:
+            self.logger.info('dropping reverted and reverting edits')
         df = df.loc[df['revert'].isnull()]
+        gc.collect()
         return df
 
     def drop_deleted(self, df):
+        if self.logger:
+            self.logger.info('dropping deleted edits')
         df = df.loc[df['deleted_text'] == False]
+        gc.collect()
         return df
 
     def drop_parse_error(self, df):
+        if self.logger:
+            self.logger.info('dropping parser errors')
         df = df.loc[df['parse_error'] == False]
+        gc.collect()
         return df
 
     def threshold_by_date(self, df):
+        if self.logger:
+            self.logger.info('applying date threshold {0}'.format(self.date_threshold))
         # get all edits earlier than date_threshold
         df = df.loc[df['ts'] <= self.date_threshold]
+        gc.collect()
         return df
 
     def threshold_by_relative_date(self, df):
+        if self.logger:
+            self.logger.info('applying relative date threshold {0}'.format(self.relative_date_threshold))
         # get all edits earlier than date_threshold
         df = df.loc[df['relative_age'] <= self.relative_date_threshold]
+        gc.collect()
         return df
 
     def reletive_page_age(self, df, duration='month'):
@@ -112,18 +135,24 @@ class RawEditPreProcessor(object):
         return df
 
     def subtract_date_offset(self, df):
+        if self.logger:
+            self.logger.info('applying date offset {0}'.format(self.date_offset))
         df['ts'] = df['ts'].subtract(pd.Timedelta(self.date_offset, unit='M'))
+        gc.collect()
         return df
 
     ## remove all rows containing an archive to get only active page ids
     ## if the page only contains archive, get a random archived ID
     def process_archive_names(self, df):
+        if self.logger:
+            self.logger.info('collapsing archives')
         # get all non-archived ids
         result = df.loc[df['archive'].isnull()]
         # get an archived id for each archive that doesn't have an un-archived page
         only_archive = self._get_archives_without_unarchived(df)
         # concat the 2 dfs
         result = pd.concat([result, only_archive])
+        gc.collect()
         return result
 
     def _get_archives_without_unarchived(self, df):
@@ -135,6 +164,7 @@ class RawEditPreProcessor(object):
         # remove duplicated titles (multiple archives)
         archived_talk_pages_without_non_archives = archived_talk_pages_without_non_archives.drop_duplicates('title')
         # get the number of pages
+        gc.collect()
         return archived_talk_pages_without_non_archives
 
     def preprocess(self, df):
@@ -161,15 +191,11 @@ class RawEditPreProcessor(object):
 
         # remove all edits made by registered bots
         if 'no_bots' in self.drop:
-            if self.logger:
-                self.logger.info('dropping bot edits')
             df = self.flag_bots(df)
             df = self.remove_bots(df)
         
         # drop all edits older than a specific date
         if self.date_threshold is not None:
-            if self.logger:
-                self.logger.info('applying date threshold {0}'.format(self.date_threshold))
             df = self.threshold_by_date(df)
 
         # threshold by edit age relative to the first edit in the wiki
@@ -184,4 +210,5 @@ class RawEditPreProcessor(object):
         df = self.process_archive_names(df)
         # remove trailing and leading spaces from page titles
         #df = self.normalize_titles(df)
+        gc.collect()
         return df

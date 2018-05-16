@@ -269,8 +269,7 @@ class EditCounter(object):
         # determine whether there was a quality assessment during each time bin
         result['has_quality_assessment'] = result['max_quality'].notnull()
         return result
-
-
+    
 def main():
     parser = argparse.ArgumentParser(description='process wiki data')
     parser.add_argument('-l', '--lang',
