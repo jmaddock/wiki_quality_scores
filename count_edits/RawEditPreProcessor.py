@@ -3,6 +3,7 @@ import numpy as np
 import os
 import datetime
 import gc
+from functools import wraps
 
 class RawEditPreProcessor(object):
 
@@ -45,6 +46,23 @@ class RawEditPreProcessor(object):
         else:
             return True
 
+    def debug_logging(self, f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            # number of rows before f
+            before_rows = len(df)
+            # drop rows
+            df = f(*args, **kwargs)
+            # number of rows after f
+            after_rows = len(df)
+            # log num rows before, after, diff
+            if self.logger:
+                self.logger.debug('rows before: {0}'.format(before_rows))
+                self.logger.debug('rows after: {0}'.format(after_rows))
+                self.logger.debug('rows dropped: {0}'.format(before_rows - after_rows))
+            return df
+        return wrapper
+
     # remove trailing and leading spaces from page titles
     def normalize_titles(self, df):
         df['title'] = df['title'].str.strip()
@@ -77,28 +95,32 @@ class RawEditPreProcessor(object):
         gc.collect()
         return df
 
+    @debug_logging
     def remove_lists(self, df):
         if self.logger:
             self.logger.info('removing pages that are lists')
-        df = df.loc[df['title'].str.contains('list', case=False)]
+        df = df.loc[~df['title'].str.contains('list of|lists of', case=False)]
         gc.collect()
         return df
 
     # remove all edits that are reverts or have been reverted
+    @debug_logging
     def drop_reverts(self, df):
         if self.logger:
-            self.logger.info('dropping reverted and reverting edits')
+            self.logger.info('removing pages that are lists')
         df = df.loc[df['revert'].isnull()]
         gc.collect()
         return df
 
+    @debug_logging
     def drop_deleted(self, df):
         if self.logger:
-            self.logger.info('dropping deleted edits')
+            self.logger.info('removing pages that are lists')
         df = df.loc[df['deleted_text'] == False]
         gc.collect()
         return df
 
+    @debug_logging
     def drop_parse_error(self, df):
         if self.logger:
             self.logger.info('dropping parser errors')
@@ -106,6 +128,7 @@ class RawEditPreProcessor(object):
         gc.collect()
         return df
 
+    @debug_logging
     def threshold_by_date(self, df):
         if self.logger:
             self.logger.info('applying date threshold {0}'.format(self.date_threshold))
@@ -114,6 +137,7 @@ class RawEditPreProcessor(object):
         gc.collect()
         return df
 
+    @debug_logging
     def threshold_by_relative_date(self, df):
         if self.logger:
             self.logger.info('applying relative date threshold {0}'.format(self.relative_date_threshold))
@@ -122,6 +146,7 @@ class RawEditPreProcessor(object):
         gc.collect()
         return df
 
+    @debug_logging
     def reletive_page_age(self, df, duration='month'):
         first_row = np.datetime64((df['ts'].min()))
         if duration == 'month':
@@ -134,6 +159,7 @@ class RawEditPreProcessor(object):
             df['relative_age'] = df['ts'].subtract(first_row, axis='index').astype('timedelta64[D]')
         return df
 
+    @debug_logging
     def subtract_date_offset(self, df):
         if self.logger:
             self.logger.info('applying date offset {0}'.format(self.date_offset))
