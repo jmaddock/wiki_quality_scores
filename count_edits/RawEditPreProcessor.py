@@ -48,11 +48,11 @@ class RawEditPreProcessor(object):
 
     def debug_logging(self, f):
         @wraps(f)
-        def wrapper(*args, **kwargs):
+        def wrapper(self, df, *args, **kwargs):
             # number of rows before f
             before_rows = len(df)
             # drop rows
-            df = f(*args, **kwargs)
+            df = f(self, df, *args, **kwargs)
             # number of rows after f
             after_rows = len(df)
             # log num rows before, after, diff
