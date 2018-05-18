@@ -159,7 +159,6 @@ class RawEditPreProcessor(object):
             df['relative_age'] = df['ts'].subtract(first_row, axis='index').astype('timedelta64[D]')
         return df
 
-    @debug_logging
     def subtract_date_offset(self, df):
         if self.logger:
             self.logger.info('applying date offset {0}'.format(self.date_offset))
