@@ -5,6 +5,7 @@ import datetime
 import gc
 from functools import wraps
 
+
 def debug_logging(f):
     @wraps(f)
     def wrapper(self, df, *args, **kwargs):
@@ -21,6 +22,7 @@ def debug_logging(f):
             self.logger.debug('rows dropped: {0}'.format(before_rows - after_rows))
         return df
     return wrapper
+
 
 class RawEditPreProcessor(object):
 
@@ -107,7 +109,7 @@ class RawEditPreProcessor(object):
     @debug_logging
     def drop_reverts(self, df):
         if self.logger:
-            self.logger.info('removing pages that are lists')
+            self.logger.info('removing reverted and reverting edits')
         df = df.loc[df['revert'].isnull()]
         gc.collect()
         return df
@@ -115,7 +117,7 @@ class RawEditPreProcessor(object):
     @debug_logging
     def drop_deleted(self, df):
         if self.logger:
-            self.logger.info('removing pages that are lists')
+            self.logger.info('removing deleted edits')
         df = df.loc[df['deleted_text'] == False]
         gc.collect()
         return df
