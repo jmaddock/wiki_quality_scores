@@ -5,6 +5,23 @@ import datetime
 import gc
 from functools import wraps
 
+def debug_logging(f):
+    @wraps(f)
+    def wrapper(self, df, *args, **kwargs):
+        # number of rows before f
+        before_rows = len(df)
+        # drop rows
+        df = f(self, df, *args, **kwargs)
+        # number of rows after f
+        after_rows = len(df)
+        # log num rows before, after, diff
+        if self.logger:
+            self.logger.debug('rows before: {0}'.format(before_rows))
+            self.logger.debug('rows after: {0}'.format(after_rows))
+            self.logger.debug('rows dropped: {0}'.format(before_rows - after_rows))
+        return df
+    return wrapper
+
 class RawEditPreProcessor(object):
 
     def __init__(self, **kwargs):
@@ -45,23 +62,6 @@ class RawEditPreProcessor(object):
             raise ValueError(message)
         else:
             return True
-
-    def debug_logging(self, f):
-        @wraps(f)
-        def wrapper(self, df, *args, **kwargs):
-            # number of rows before f
-            before_rows = len(df)
-            # drop rows
-            df = f(self, df, *args, **kwargs)
-            # number of rows after f
-            after_rows = len(df)
-            # log num rows before, after, diff
-            if self.logger:
-                self.logger.debug('rows before: {0}'.format(before_rows))
-                self.logger.debug('rows after: {0}'.format(after_rows))
-                self.logger.debug('rows dropped: {0}'.format(before_rows - after_rows))
-            return df
-        return wrapper
 
     # remove trailing and leading spaces from page titles
     def normalize_titles(self, df):
