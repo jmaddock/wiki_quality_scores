@@ -4,8 +4,11 @@ import numpy as np
 import logging
 from RawEditPreProcessor import RawEditPreProcessor
 from EditCountPostProcessor import EditCountPostProcessor
+from ThreadedCSVLoader import ThreadedCSVLoader
 from pysal.inequality import gini
 import argparse
+import gc
+import os
 
 HALF_YEAR = lambda x: int((x-1)/6)
 
@@ -56,7 +59,7 @@ DTYPES = {
 
 class EditCounter(object):
 
-    def __init__(self, lang, **kwargs):
+    def __init__(self, lang, df, **kwargs):
         # two letter wikipedia language version code
         self.lang = lang
         self.preprocessor = RawEditPreProcessor(**kwargs)
@@ -66,7 +69,7 @@ class EditCounter(object):
         self.logger = kwargs.get('logger')
 
         # dataframe of raw edits
-        self.df = None
+        self.df = df
 
         # dataframe of edit counts
         self.processed_df = None
@@ -161,17 +164,16 @@ class EditCounter(object):
         # move namespace, title, year, and half year from index to column
         group_by_columns = ['title', 'namespace', df['ts'].dt.year, df['ts'].dt.month.apply(HALF_YEAR)]
         count_df = df.groupby(group_by_columns).size().to_frame('edit_count')
+        del df
+        gc.collect()
         count_df.index.names = ['title', 'namespace', 'year', 'half_year']
         # reindex and fill missing values w/ 0s
-        count_df = count_df.reindex(pd.MultiIndex.from_product(count_df.index.levels, names=count_df.index.names), fill_value=0).reset_index()
+        count_df = count_df.reindex(pd.MultiIndex.from_product(count_df.index.levels, names=count_df.index.names), fill_value=0)
+        count_df.reset_index(inplace=True)
         # get the cumulative sum for each time bin (total number of edits up through the end of the time bin)
-        count_df = count_df.merge(
-            count_df.groupby(['title', 'namespace'])['edit_count'].cumsum().to_frame('cumsum_edit_count_inclusive'),
-            right_index=True, left_index=True)
+        count_df['cumsum_edit_count_inclusive'] = count_df.groupby(['title', 'namespace'])['edit_count'].cumsum()
         # get the cumulative sum excluding the current time bin
-        count_df = count_df.merge(
-            count_df['cumsum_edit_count_inclusive'].subtract(count_df['edit_count']).to_frame('cumsum_edit_count_exclusive'),
-            right_index=True, left_index=True).reset_index()
+        count_df['cumsum_edit_count_exclusive'] = count_df['cumsum_edit_count_inclusive'].subtract(count_df['edit_count'])
         # merge the aggregated df (including reverts) with the result df by title and namespace
         result = count_df.merge(result, on=['title', 'namespace'])
         return result
@@ -181,31 +183,32 @@ class EditCounter(object):
         if self.logger:
             self.logger.info('calculating page ages')
         # calculate the age of the first edit for each page
-        first = df.groupby(['title', 'namespace'])['ts'].min().to_frame('first_edit').reset_index()
+        first = df.groupby(['title', 'namespace'])['ts'].min().to_frame('first_edit')
+        first.reset_index(inplace=True)
         # convert first edit age to months
-        first = first.merge(
-            first['first_edit'].dt.month.add(first['first_edit'].dt.year.multiply(12)).to_frame('first_edit_months'),
-            right_index=True, left_index=True)
+        first['first_edit_months'] = first['first_edit'].dt.month.add(first['first_edit'].dt.year.multiply(12))
         last = df[['title', 'namespace', 'ts']]
+        del df
+        gc.collect()
         # calculate the half year of each edit
-        last = last.merge(last['ts'].dt.month.apply(HALF_YEAR).to_frame('half_year'), right_index=True, left_index=True)
+        last['half_year'] = last['ts'].dt.month.apply(HALF_YEAR)
         # calculate the year of each edit
-        last = last.merge(last['ts'].dt.year.to_frame('year'), right_index=True, left_index=True)
+        last['year'] = last['ts'].dt.year.to_frame('year')
         # get the unique years and half years for each page
         last = last.drop_duplicates(subset=['title', 'namespace', 'year', 'half_year'])[
             ['title', 'namespace', 'year', 'half_year']]
         # reindex to fill missing values
-        last = last.set_index(['title', 'namespace', 'year', 'half_year'])
-        last = last.reindex(pd.MultiIndex.from_product(last.index.levels, names=last.index.names)).reset_index()
+        last.set_index(['title', 'namespace', 'year', 'half_year'],inplace=True)
+        last = last.reindex(pd.MultiIndex.from_product(last.index.levels, names=last.index.names))
+        last.reset_index(inplace=True)
         # calculate the age in months of the last edit
         last['last_edit_months'] = last['year'].multiply(12).add(last['half_year'].add(1).multiply(6))
         # merge the first and last edit dfs
         first_and_last = last.merge(first, on=['title', 'namespace'])
         # get the age in months by subtracting the first from last
         # NOTE: if age < 0, the page has not yet been created
-        age = first_and_last['last_edit_months'].subtract(first_and_last['first_edit_months']).to_frame('page_age')
-        result = first_and_last.merge(age, right_index=True, left_index=True)[['title', 'namespace', 'year', 'half_year', 'page_age']]
-        return result
+        first_and_last['page_age'] = first_and_last['last_edit_months'].subtract(first_and_last['first_edit_months'])
+        return first_and_last[['title', 'namespace', 'year', 'half_year', 'page_age']]
 
     # get the number of unique editors who have contributed to a group of articles
     def num_editors(self, df):
@@ -213,18 +216,18 @@ class EditCounter(object):
             self.logger.info('calculating editor counts')
         group_by_columns = ['title', 'namespace', df['ts'].dt.year, df['ts'].dt.month.apply(HALF_YEAR)]
         count_df = df.groupby(group_by_columns)['user_text'].nunique().to_frame('editor_count')
+        del df
+        gc.collect()
         count_df.index.names = ['title', 'namespace', 'year', 'half_year']
         # reindex and fill missing values w/ 0s
         count_df = count_df.reindex(pd.MultiIndex.from_product(count_df.index.levels, names=count_df.index.names),
-                                    fill_value=0).reset_index()
+                                    fill_value=0)
+        count_df.reset_index(inplace=True)
         # get the cumulative sum for each time bin (total number of editors up through the end of the time bin)
-        count_df = count_df.merge(
-            count_df.groupby(['title', 'namespace'])['editor_count'].cumsum().to_frame('cumsum_editor_count_inclusive'),
-            right_index=True, left_index=True)
+        count_df['cumsum_editor_count_inclusive'] = count_df.groupby(['title', 'namespace'])['editor_count'].cumsum()
         # get the cumulative sum excluding the current time bin
-        count_df = count_df.merge(
-            count_df['cumsum_editor_count_inclusive'].subtract(count_df['editor_count']).to_frame('cumsum_editor_count_exclusive'),
-            right_index=True, left_index=True).reset_index()
+        count_df['cumsum_editor_count_exclusive'] = count_df['cumsum_editor_count_inclusive'].subtract(count_df['editor_count'])
+        count_df.reset_index(inplace=True)
         # merge the aggregated df (including reverts) with the result df by title and namespace
         return count_df
 
@@ -238,10 +241,11 @@ class EditCounter(object):
         ).size().to_frame('edits_per_editor')
         # rename index columns
         df.index.names = ['title', 'namespace', 'year', 'half_year', 'user_text']
-        df = df.reset_index()
+        df.reset_index(inplace=True)
         df = df.groupby(
             ['title', 'namespace', 'year', 'half_year']
-        )['edits_per_editor'].apply(lambda x: gini._gini(x.values)).to_frame('gini_coef').reset_index()
+        )['edits_per_editor'].apply(lambda x: gini._gini(x.values)).to_frame('gini_coef')
+        df.reset_index(inplace=True)
         return df
 
     # return has_quality_assessment(true/false), max quality, quality change
@@ -253,6 +257,8 @@ class EditCounter(object):
         df['quality_change'] = pd.to_numeric(df['quality_change'], errors='coerce')
         # group
         group = df.groupby(['title', 'namespace', df['ts'].dt.year, df['ts'].dt.month.apply(HALF_YEAR)])
+        del df
+        gc.collect()
         # determine the maximum quality during each time bin
         max_quality = group['max_quality'].max().to_frame('max_quality')
         # determine the change in quality during each time bin
@@ -261,7 +267,8 @@ class EditCounter(object):
         result = max_quality.merge(quality_change, how='outer', right_index=True, left_index=True)
         # reset the index to add missing time bins
         result.index.names = ['title', 'namespace', 'year', 'half_year']
-        result = result.reindex(pd.MultiIndex.from_product(result.index.levels, names=result.index.names)).reset_index()
+        result = result.reindex(pd.MultiIndex.from_product(result.index.levels, names=result.index.names))
+        result.reset_index(inplace=True)
         # forward fill values from missing time bins
         # TODO FIX HAS QUALITY ASSESSMENT FFILL
         result['max_quality'] = result.groupby(['title', 'namespace'])['max_quality'].fillna(method='ffill')
@@ -276,7 +283,7 @@ def main():
                         help='the two letter wiki language codes to to process')
     parser.add_argument('-i', '--infile',
                         required=True,
-                        help='path to a file of raw edits')
+                        help='path to a file of raw edits, or a directory of raw edit files')
     parser.add_argument('-o', '--outfile',
                         required=True,
                         help='path to the output file')
@@ -326,7 +333,14 @@ def main():
         streamHandler.setFormatter(formatter)
         logger.addHandler(streamHandler)
 
-    ec = EditCounter(lang=args.lang,
+    CSVloader = ThreadedCSVLoader(
+        num_workers=4,
+    )
+    CSVloader.get_file_list(args.infile)
+    df = CSVloader.multiprocess_load()
+
+    ec = EditCounter(df=df,
+                     lang=args.lang,
                      date_threshold=args.date_threshold,
                      relative_date_threshold=args.relative_date_threshold,
                      date_offset=args.date_offset,
@@ -334,7 +348,7 @@ def main():
                      bot_list_filepath=args.bot_list_filepath,
                      logger=logger)
 
-    ec.load_raw_edit_file(args.infile)
+    #ec.load_raw_edit_file(args.infile)
     ec.process()
     ec.write_to_file(args.outfile)
 
