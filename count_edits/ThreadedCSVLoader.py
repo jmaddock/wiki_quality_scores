@@ -54,8 +54,9 @@ class ThreadedCSVLoader(object):
             self.logger.info('found {0} files in {1}'.format(len(self.infile_list), indir))
 
     def load_raw_edit_file(self, infile):
-        if self.logger:
-            self.logger.info('loading data from file {0}'.format(infile))
+        #if self.logger:
+            #self.logger.info\
+        print('loading data from file {0}'.format(infile))
 
         df = pd.read_csv(infile,
                          na_values=NA_VALUES,
@@ -69,6 +70,7 @@ class ThreadedCSVLoader(object):
             self.logger.info('loading {0} files with {1} workers'.format(len(self.infile_list), self.num_workers))
         executor = ProcessPoolExecutor()
         df_list = [infile for infile in executor.map(self.load_raw_edit_file, self.infile_list)]
+        print('finished processing')
 
         df = pd.concat(df_list, ignore_index=True)
         df['archive'] = df['archive'].astype("category")
