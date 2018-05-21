@@ -67,7 +67,7 @@ class ThreadedCSVLoader(object):
     def multiprocess_load(self):
         if self.logger:
             self.logger.info('loading {0} files with {1} workers'.format(len(self.infile_list), self.num_workers))
-        executor = ProcessPoolExecutor(max_workers=4)
+        executor = ProcessPoolExecutor()
         df_list = [infile for infile in executor.map(self.load_raw_edit_file, self.infile_list)]
 
         df = pd.concat(df_list, ignore_index=True)
