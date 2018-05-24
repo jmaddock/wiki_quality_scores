@@ -1,4 +1,3 @@
-from RawEditPreProcessor import RawEditPreProcessor
 from ThreadedCSVLoader import ThreadedCSVLoader
 import pandas as pd
 import argparse
@@ -17,20 +16,17 @@ class RawEditArchiveHandler(object):
         self.num_bins = num_bins
         self.lang = lang
 
-        # preprocessor for handling archives
-        self.preprocessor = RawEditPreProcessor(**kwargs)
-
     def split_and_write(self, outdir):
         if self.logger:
             self.logger.info('writing {0} files to {1}'.format(self.num_bins, outdir))
-        # collapse archives
-        self.df = self.preprocessor.preprocess(self.df)
-        # bin columns by page_id
-        self.df['bin'] = pd.cut(self.df['page_id'], bins=self.num_bins, labels=range(self.num_bins))
+        # bin columns by title, making sure that archives and linked pages end up in the same file
+        self.df['bin'] = pd.qcut(self.df.groupby('title').ngroup(),
+                                 q=self.num_bins,
+                                 labels=range(self.num_bins))
         # write each group to its own file
         for i, g in self.df.groupby('bin'):
             outfile = os.path.join(outdir, '{0}_{1}.csv'.format(self.lang, i))
-            g.to_csv(outfile, header=False, index_label=False)
+            g.to_csv(outfile, index_label=False)
             if self.logger:
                 self.logger.debug('wrote file {0}'.format(outfile))
 

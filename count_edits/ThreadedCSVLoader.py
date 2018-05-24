@@ -11,15 +11,15 @@ INPUT_COLUMNS = [
 
 NA_VALUES = {
     'title': [''],
-    'archive': ['None'],
+    'archive': ['None', 'NaN', ''],
     'user_text': [''],
-    'user_id': ['None'],
-    'revert': ['None'],
-    'quality_change': ['None'],
-    'new_quality_scores': ['None'],
-    'min_quality': ['None'],
-    'mean_quality': ['None'],
-    'max_quality': ['None'],
+    'user_id': ['None', 'NaN', ''],
+    'revert': ['None', 'NaN', ''],
+    'quality_change': ['None', 'NaN', ''],
+    'new_quality_scores': ['None', 'NaN', ''],
+    'min_quality': ['None', 'NaN', ''],
+    'mean_quality': ['None', 'NaN', ''],
+    'max_quality': ['None', 'NaN', ''],
 }
 
 DTYPES = {
@@ -54,8 +54,6 @@ class ThreadedCSVLoader(object):
             self.logger.info('found {0} files in {1}'.format(len(self.infile_list), indir))
 
     def load_raw_edit_file(self, infile):
-        #if self.logger:
-            #self.logger.info\
         print('loading data from file {0}'.format(infile))
 
         df = pd.read_csv(infile,
@@ -91,6 +89,17 @@ class ThreadedCSVLoader(object):
                          chunksize=1000,
                          usecols=INPUT_COLUMNS)
         df = pd.concat(tp, ignore_index=True)
+        df['archive'] = df['archive'].astype("category")
+        df['revert'] = df['revert'].astype("category")
+        df['namespace'] = df['namespace'].astype("category")
+        return df
+
+    def singleprocess_load(self, infile):
+        df = pd.read_csv(infile,
+                         na_values=NA_VALUES,
+                         keep_default_na=False,
+                         dtype=DTYPES,
+                         usecols=INPUT_COLUMNS)
         df['archive'] = df['archive'].astype("category")
         df['revert'] = df['revert'].astype("category")
         df['namespace'] = df['namespace'].astype("category")

@@ -12,11 +12,6 @@ import os
 
 HALF_YEAR = lambda x: int((x-1)/6)
 
-INPUT_COLUMNS = [
-    'page_id', 'namespace', 'title', 'archive', 'user_text', 'revert', 'ts', 'quality_change', 'new_quality_scores',
-    'max_quality', 'parse_error', 'deleted_text'
-]
-
 PROCESSED_COLUMNS = [
     'title', 'year', 'half_year', 'edit_count_0', 'cumsum_edit_count_inclusive_0', 'cumsum_edit_count_exclusive_0',
     'page_id_0', 'page_age_0', 'editor_count_0', 'cumsum_editor_count_inclusive_0',
@@ -25,37 +20,6 @@ PROCESSED_COLUMNS = [
     'cumsum_editor_count_exclusive_1', 'gini_coef_1', 'has_quality_assessment_1', 'max_quality_1',
     'quality_change_1', 'lang'
 ]
-
-NA_VALUES = {
-    'title': [''],
-    'archive': ['None'],
-    'user_text': [''],
-    'user_id': ['None'],
-    'revert': ['None'],
-    'quality_change': ['None'],
-    'new_quality_scores': ['None'],
-    'min_quality': ['None'],
-    'mean_quality': ['None'],
-    'max_quality': ['None'],
-}
-
-DTYPES = {
-    'page_id':np.int64,
-    'namespace':np.int64,
-    'title': object,
-    'archive': object,
-    'user_text': object,
-    'user_id': np.float64,
-    'revert': object,
-    'ts': object,
-    'quality_change': np.float64,
-    'new_quality_scores': np.float64,
-    'min_quality': np.float64,
-    'mean_quality': np.float64,
-    'max_quality': np.float64,
-    'parse_error': bool,
-    'deleted_text': bool
-}
 
 class EditCounter(object):
 
@@ -333,11 +297,17 @@ def main():
         streamHandler.setFormatter(formatter)
         logger.addHandler(streamHandler)
 
-    CSVloader = ThreadedCSVLoader(
-        num_workers=4,
-    )
-    CSVloader.get_file_list(args.infile)
-    df = CSVloader.multiprocess_load()
+    if os.path.isdir(args.infile):
+        CSVloader = ThreadedCSVLoader(
+            num_workers=4,
+        )
+        CSVloader.get_file_list(args.infile)
+        df = CSVloader.multiprocess_load()
+    else:
+        CSVloader = ThreadedCSVLoader(
+            num_workers=1,
+        )
+        df = CSVloader.singleprocess_load(args.infile)
 
     ec = EditCounter(df=df,
                      lang=args.lang,
@@ -348,7 +318,6 @@ def main():
                      bot_list_filepath=args.bot_list_filepath,
                      logger=logger)
 
-    #ec.load_raw_edit_file(args.infile)
     ec.process()
     ec.write_to_file(args.outfile)
 
