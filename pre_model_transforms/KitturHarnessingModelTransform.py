@@ -46,7 +46,7 @@ class KitturHarnessingModelTransform(object):
         df['time_bin'] = df['year'].add(df['half_year'].multiply(.5))
         # offset the end quality by 6 months
         start_quality = df[['time_bin', 'title', 'max_quality_1']].rename(columns={'max_quality_1': 'max_start_quality'})
-        start_quality['time_bin'] = start_quality['time_bin'].subtract(.5)
+        start_quality['time_bin'] = start_quality['time_bin'].add(.5)
         # merge the offset end quality with the original df
         df = df.merge(start_quality, on=['time_bin', 'title'], how='outer')
         # subtract the original (t=n) quality from the offset quality (t=n+1) to get quality change
